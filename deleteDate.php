@@ -37,6 +37,12 @@ if ( isset($_POST["submitBookingData"]) ) {
 
         echo "<script> alert('Backtermin storniert'); </script>";
         header("Location: index.php?month=" . $month . "&year=" . $year . "&msg=successDelete");
+        $to = "kontakt@backhaus-heumaden.de";
+        $subject = "Termin storniert";
+        $message = "Die Backgruppe $backgruppe hat soeben den Termin $requestedDate um $requestedSlot storniert.";
+        $headers = "From: no-reply@backhaus-heumaden.de";
+        mail($to, $subject, $message, $headers);
+        header("Location: index.php?month=" . $month . "&year=" . $year . "&msg=successDelete");
       }
 
     } else {
