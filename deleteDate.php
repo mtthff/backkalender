@@ -48,6 +48,14 @@ if ( isset($_POST["submitBookingData"]) ) {
             $message = "Die Backgruppe $backgruppe hat soeben den Backtermin $requestedDateFormatted mit dem Slot \"$requestedSlot\" storniert.";
             $headers = "From: no-reply@backhaus-heumaden.de";
             mail($to, $subject, $message, $headers);
+            // Mail an bg-leiter:innen
+            // $to2 = "bgleiter@backhaus-heumaden.de";
+            // // $to2 = "mtthff@gmail.com, hwr@pilhuhn.de";
+            // $subject2 = "[Backhaus] Backtermin wurde storniert";
+            // $message2 = "Die Backgruppe $backgruppe hat soeben den Backtermin $requestedDateFormatted mit dem Slot \"$requestedSlot\" storniert.";
+            // $message2 .= "\n\nTragt euch im Backkalender ein: https://backhaus-heumaden.de/kalender/?month=". $month."&year=". $year;
+            // $headers2 = "From: no-reply@backhaus-heumaden.de";
+            // mail($to2, $subject2, $message2, $headers2);
         }
         header("Location: index.php?month=" . $month . "&year=" . $year . "&msg=successDelete");
       }
