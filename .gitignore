@@ -1,3 +1,6 @@
 # DB configuration
 tableConfig.php
 dbh.class.php
+assets/
+dbh.class-neu.php
+tableConfig-neu.php
