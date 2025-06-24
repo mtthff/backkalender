@@ -36,12 +36,27 @@ if ( isset($_POST["submitBookingData"]) ) {
       if ( $newStmt->execute( array("requestedDate" => $requestedDate, "slot" => $requestedSlot) ) ) {
 
         echo "<script> alert('Backtermin storniert'); </script>";
-        header("Location: index.php?month=" . $month . "&year=" . $year . "&msg=successDelete");
-        $to = "kontakt@backhaus-heumaden.de";
-        $subject = "Termin storniert";
-        $message = "Die Backgruppe $backgruppe hat soeben den Termin $requestedDate um $requestedSlot storniert.";
-        $headers = "From: no-reply@backhaus-heumaden.de";
-        mail($to, $subject, $message, $headers);
+        $currentDate = new DateTime();
+        $requestedDateTime = DateTime::createFromFormat('Y-m-d', $requestedDate);
+        $requestedDateFormatted = $requestedDateTime->format('d.m.Y');
+        $interval = $currentDate->diff($requestedDateTime);
+
+        if ($interval->days < 42) { // 6 weeks * 7 days = 42 days
+            $to = "kontakt@backhaus-heumaden.de";
+            // $to = "mtthff@gmail.com, olaf.fischer@gmx.de";
+            $subject = "Termin storniert";
+            $message = "Die Backgruppe $backgruppe hat soeben den Backtermin $requestedDateFormatted mit dem Slot \"$requestedSlot\" storniert.";
+            $headers = "From: no-reply@backhaus-heumaden.de";
+            mail($to, $subject, $message, $headers);
+            // Mail an bg-leiter:innen
+            // $to2 = "bgleiter@backhaus-heumaden.de";
+            // // $to2 = "mtthff@gmail.com, hwr@pilhuhn.de";
+            // $subject2 = "[Backhaus] Backtermin wurde storniert";
+            // $message2 = "Die Backgruppe $backgruppe hat soeben den Backtermin $requestedDateFormatted mit dem Slot \"$requestedSlot\" storniert.";
+            // $message2 .= "\n\nTragt euch im Backkalender ein: https://backhaus-heumaden.de/kalender/?month=". $month."&year=". $year;
+            // $headers2 = "From: no-reply@backhaus-heumaden.de";
+            // mail($to2, $subject2, $message2, $headers2);
+        }
         header("Location: index.php?month=" . $month . "&year=" . $year . "&msg=successDelete");
       }
 
