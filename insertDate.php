@@ -2,7 +2,7 @@
 
 session_start();
 
-require_once("dbh.class.php"); 
+require_once("dbh.class.php");
 
 $connection = new Dbh();
 
@@ -17,15 +17,14 @@ if ( isset($_POST["submitBookingData"]) ) {
   $year = date("Y", strtotime($requestedDate));
   $month = date("m", strtotime($requestedDate));
 
-  var_dump($year);
-  var_dump($month);
-  var_dump($backgruppe);
+  // var_dump($year);
+  // var_dump($month);
+  // var_dump($backgruppe);
 
   // pruefe ob backgruppe gewaehlt
   if ( $backgruppe == "0" ) {
     // keine Backgruppe gewaehlt
-    echo "<script> alert('Fehler: Bitte Backgruppe w&auml;hlen'); </script>";
-    header("Location: index.php?month=" . $month . "&year=" . $year . "&msg=failBackgruppe");
+    echo "<script> alert('Fehler: Bitte Backgruppe w&auml;hlen'); window.location.href = 'index.php?month=" . $month . "&year=" . $year . "&msg=failBackgruppe'; </script>";
   } else {
 
     // lese Passwort der Backgruppe aus Datenbank
@@ -34,7 +33,7 @@ if ( isset($_POST["submitBookingData"]) ) {
     $stmt->execute( [$backgruppe] );
 
     if ( $result = $stmt->fetchAll() ) {
-      $passwordFromDb = $result[0]["passwort"]; 
+      $passwordFromDb = $result[0]["passwort"];
 
       // pruefe ob passwort richtig eingegeben wurde
       if ( $password==$passwordFromDb ) {
@@ -48,7 +47,7 @@ if ( isset($_POST["submitBookingData"]) ) {
         $stmt = $connection->connect()->prepare($sql);
         $stmt->execute( [$backgruppe] );
         $result = $stmt->fetchAll();
-        $backkgruppenType = $result[0]["type"]; 
+        $backkgruppenType = $result[0]["type"];
 
         // wenn buchung vor dem stichtag oder backgruppentyp nicht "vorstand" dann Fehler
         // stichtag ist 13 Monate in der Vergangenheit
@@ -60,8 +59,7 @@ if ( isset($_POST["submitBookingData"]) ) {
 
         $today = date("Y-m-d");
         if ( $today<$dateToCompare and $backkgruppenType!="vorstand" ) {
-          echo "<script> alert('Fehler: Dieser Termin kann erst ab " . $dateToCompare . " gebucht werden.'); </script>";
-          header("Location: index_local.php?month=" . $month . "&year=" . $year . "&msg=failToEarly");
+          echo "<script> alert('Fehler: Dieser Termin kann erst ab " . $dateToCompare . " gebucht werden.'); window.location.href = 'index_local.php?month=" . $month . "&year=" . $year . "&msg=failToEarly'; </script>";
           exit();
         }
 
@@ -74,7 +72,7 @@ if ( isset($_POST["submitBookingData"]) ) {
           foreach ( $result as $row ) {
             $bookings[] = $row["backtermin"];
           }
-        } 
+        }
 
         if ( !in_array($requestedDate, $bookings) ) {
           // Termin ist noch frei und wird gebucht
@@ -83,20 +81,17 @@ if ( isset($_POST["submitBookingData"]) ) {
           $newStmt = $connection->connect()->prepare($newQuery);
           $newStmt->execute( array("backgruppe" => $backgruppe, "requestedDate" => $requestedDate, "slot" => $requestedSlot) );
           if ($newStmt) {
-            echo "<script> alert('Backtermin gespeichert'); </script>";
-            header("Location: index.php?month=" . $month . "&year=" . $year . "&msg=successInsert");
+            echo "<script> alert('Backtermin gespeichert'); window.location.href = 'index.php?month=" . $month . "&year=" . $year . "&msg=successInsert'; </script>";
           }
 
         } else {
           // Termin ist bereits gebucht
-          echo "<script> alert('Fehler: Termin ist bereits gebucht'); </script>";
-          header("Location: index.php?month=" . $month . "&year=" . $year . "&msg=failInsert");
+          echo "<script> alert('Fehler: Termin ist bereits gebucht'); window.location.href = 'index.php?month=" . $month . "&year=" . $year . "&msg=failInsert'; </script>";
         }
 
       } else {
         // Passwort wurde falsch eingegeben
-        echo "<script> alert('Fehler: falsches Passwort'); </script>";
-        header("Location: index.php?month=" . $month . "&year=" . $year . "&msg=failPW");
+        echo "<script> alert('Fehler: falsches Passwort'); window.location.href = 'index.php?month=" . $month . "&year=" . $year . "&msg=failPW'; </script>";
       }
     }
   }
