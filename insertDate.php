@@ -6,6 +6,22 @@ require_once("dbh.class.php");
 
 $connection = new Dbh();
 
+// Funktion zum Schreiben in die Log-Datei
+function writeDoerrenLog($name, $email, $backtermin) {
+  $logFile = "doerren_log.txt";
+  $currentDateTime = date("Y-m-d H:i:s");
+  $logEntry = sprintf(
+    "[%s] Buchung für Termin: %s | Name: %s | E-Mail: %s\n",
+    $currentDateTime,
+    $backtermin,
+    $name,
+    $email
+  );
+  
+  // Schreibe in Log-Datei (append mode)
+  file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
+}
+
 if ( isset($_POST["submitBookingData"]) ) {
   $backgruppe = $_POST["InputBackgruppe"];
   $password = $_POST["InputPassword"];
@@ -76,6 +92,11 @@ if ( isset($_POST["submitBookingData"]) ) {
 
         if ( !in_array($requestedDate, $bookings) ) {
           // Termin ist noch frei und wird gebucht
+
+          // Wenn Backgruppe "Dörren" ist, schreibe in Log-Datei
+          if ( $backgruppe === "Dörren" && isset($_POST["doerren_name"]) && isset($_POST["doerren_email"]) ) {
+            writeDoerrenLog($_POST["doerren_name"], $_POST["doerren_email"], $requestedDate);
+          }
 
           $newQuery = "INSERT INTO backtermine (id,backgruppeName,backtermin,storniert,slot) VALUES (NULL,:backgruppe,:requestedDate,'nein',:slot)";
           $newStmt = $connection->connect()->prepare($newQuery);

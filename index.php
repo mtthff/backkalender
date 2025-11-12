@@ -620,6 +620,53 @@ function shorter( $str ) {
   <script src="./jquery/jquery-3.3.1.slim.min.js"></script>
   <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>-->
   <script src="./bootstrap/js/bootstrap.min.js"></script>
+  
+  <script>
+    // Funktion zur Validierung der Backgruppe "Dörren"
+    function validateDoerrenBooking(formElement) {
+      var backgruppe = $(formElement).find('[name="InputBackgruppe"]').val();
+      
+      if (backgruppe === "Dörren") {
+        var name = prompt("Sie haben 'Dörren' gewählt.\n\nBitte geben Sie Ihren Namen ein:");
+        if (name === null || name.trim() === "") {
+          alert("Name ist erforderlich!");
+          return false;
+        }
+        
+        var email = prompt("Bitte geben Sie Ihre E-Mail-Adresse ein:");
+        if (email === null || email.trim() === "") {
+          alert("E-Mail-Adresse ist erforderlich!");
+          return false;
+        }
+        
+        // Füge Name und E-Mail als Hidden Fields hinzu
+        var nameInput = $('<input>').attr({
+          type: 'hidden',
+          name: 'doerren_name',
+          value: name
+        });
+        var emailInput = $('<input>').attr({
+          type: 'hidden',
+          name: 'doerren_email',
+          value: email
+        });
+        
+        $(formElement).append(nameInput);
+        $(formElement).append(emailInput);
+      }
+      
+      return true;
+    }
+    
+    // Event-Handler für alle Buchungsformulare
+    $('#bookingModal form, #bookingModalVostand form, #bookingModalFixedSlot form').on('submit', function(e) {
+      if (!validateDoerrenBooking(this)) {
+        e.preventDefault();
+        return false;
+      }
+    });
+  </script>
+  
   <script>
     // Dialog fuer Terminbuchung, Parameteruebergabe
     $('#bookingModal').on('show.bs.modal', function (event) {
