@@ -2,9 +2,25 @@
 
 session_start();
 
-require_once("dbh.class.php"); 
+require_once("dbh.class.php");
 
 $connection = new Dbh();
+
+// Funktion zum Schreiben in die Log-Datei
+function writeDoerrenLog($name, $email, $backtermin) {
+  $logFile = "doerren_log.txt";
+  $currentDateTime = date("Y-m-d H:i:s");
+  $logEntry = sprintf(
+    "[%s] Buchung für Termin: %s | Name: %s | E-Mail: %s\n",
+    $currentDateTime,
+    $backtermin,
+    $name,
+    $email
+  );
+  
+  // Schreibe in Log-Datei (append mode)
+  file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
+}
 
 if ( isset($_POST["submitBookingData"]) ) {
   $backgruppe = $_POST["InputBackgruppe"];
@@ -17,12 +33,10 @@ if ( isset($_POST["submitBookingData"]) ) {
   $day = date("d", strtotime($requestedDate));
   $year = date("Y", strtotime($requestedDate));
   $month = date("m", strtotime($requestedDate));
-
   // pruefe ob backgruppe gewaehlt
   if ( $backgruppe == "0" ) {
     // keine Backgruppe gewaehlt
-    echo "<script> alert('Fehler: Bitte Backgruppe w&auml;hlen'); </script>";
-    header("Location: index.php?month=" . $month . "&year=" . $year . "&msg=failBackgruppe");
+    echo "<script> alert('Fehler: Bitte Backgruppe w&auml;hlen'); window.location.href = 'index.php?month=" . $month . "&year=" . $year . "&msg=failBackgruppe'; </script>";
   } else {
 
     // lese Passwort der Backgruppe aus Datenbank
@@ -37,7 +51,7 @@ if ( isset($_POST["submitBookingData"]) ) {
 
       // Sonntags duerfen nur die Gruppen mit ID 41, 39 und 25 buchen.
       if ( date('w', strtotime($requestedDate)) == 0 && !in_array(intval($backgruppeId), array(41, 39, 25), true) ) {
-        header("Location: index.php?month=" . $month . "&year=" . $year . "&msg=failSundayGroup");
+        echo "<script> alert('Fehler: Sonntags sind nur bestimmte Backgruppen erlaubt.'); window.location.href = 'index.php?month=" . $month . "&year=" . $year . "&msg=failSundayGroup'; </script>";
         exit();
       }
 
@@ -47,7 +61,6 @@ if ( isset($_POST["submitBookingData"]) ) {
         // schreibe PW und Gruppe in session-cookie
         $_SESSION["password"] = $password;
         $_SESSION["backgruppe"] = $backgruppe;
-
         // wenn buchung vor dem stichtag oder backgruppentyp nicht "vorstand" dann Fehler
         // stichtag ist 13 Monate in der Vergangenheit
         if ( $month==1) {
@@ -58,8 +71,7 @@ if ( isset($_POST["submitBookingData"]) ) {
 
         $today = date("Y-m-d");
         if ( $today<$dateToCompare and $backkgruppenType!="vorstand" ) {
-          echo "<script> alert('Fehler: Dieser Termin kann erst ab " . $dateToCompare . " gebucht werden.'); </script>";
-          header("Location: index_local.php?month=" . $month . "&year=" . $year . "&msg=failToEarly");
+          echo "<script> alert('Fehler: Dieser Termin kann erst ab " . $dateToCompare . " gebucht werden.'); window.location.href = 'index_local.php?month=" . $month . "&year=" . $year . "&msg=failToEarly'; </script>";
           exit();
         }
 
@@ -72,29 +84,31 @@ if ( isset($_POST["submitBookingData"]) ) {
           foreach ( $result as $row ) {
             $bookings[] = $row["backtermin"];
           }
-        } 
+        }
 
         if ( !in_array($requestedDate, $bookings) ) {
           // Termin ist noch frei und wird gebucht
+
+          // Wenn Backgruppe "Dörren" ist, schreibe in Log-Datei
+          if ( $backgruppe === "Dörren" && isset($_POST["doerren_name"]) && isset($_POST["doerren_email"]) ) {
+            writeDoerrenLog($_POST["doerren_name"], $_POST["doerren_email"], $requestedDate);
+          }
 
           $newQuery = "INSERT INTO backtermine (id,backgruppeName,backtermin,storniert,slot) VALUES (NULL,:backgruppe,:requestedDate,'nein',:slot)";
           $newStmt = $connection->connect()->prepare($newQuery);
           $newStmt->execute( array("backgruppe" => $backgruppe, "requestedDate" => $requestedDate, "slot" => $requestedSlot) );
           if ($newStmt) {
-            echo "<script> alert('Backtermin gespeichert'); </script>";
-            header("Location: index.php?month=" . $month . "&year=" . $year . "&msg=successInsert");
+            echo "<script> alert('Backtermin gespeichert'); window.location.href = 'index.php?month=" . $month . "&year=" . $year . "&msg=successInsert'; </script>";
           }
 
         } else {
           // Termin ist bereits gebucht
-          echo "<script> alert('Fehler: Termin ist bereits gebucht'); </script>";
-          header("Location: index.php?month=" . $month . "&year=" . $year . "&msg=failInsert");
+          echo "<script> alert('Fehler: Termin ist bereits gebucht'); window.location.href = 'index.php?month=" . $month . "&year=" . $year . "&msg=failInsert'; </script>";
         }
 
       } else {
         // Passwort wurde falsch eingegeben
-        echo "<script> alert('Fehler: falsches Passwort'); </script>";
-        header("Location: index.php?month=" . $month . "&year=" . $year . "&msg=failPW");
+        echo "<script> alert('Fehler: falsches Passwort'); window.location.href = 'index.php?month=" . $month . "&year=" . $year . "&msg=failPW'; </script>";
       }
     }
   }

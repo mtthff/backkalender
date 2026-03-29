@@ -61,12 +61,11 @@ if ( isset($_POST["submitBookingData"]) ) {
             $headers2 = "From: no-reply@backhaus-heumaden.de";
             mail($to2, $subject2, $message2, $headers2);
         }
-        header("Location: index.php?month=" . $month . "&year=" . $year . "&msg=successDelete");
+        echo "<script> window.location.href = 'index.php?month=" . $month . "&year=" . $year . "&msg=successDelete'; </script>";
       }
 
     } else {
-      echo "<script> alert('Fehler: falsches Passwort'); </script>";
-      header("Location: index.php?month=" . $month . "&year=" . $year . "&msg=failPW");
+      echo "<script> alert('Fehler: falsches Passwort'); window.location.href = 'index.php?month=" . $month . "&year=" . $year . "&msg=failPW'; </script>";
     }
   }
 
