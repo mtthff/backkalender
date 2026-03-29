@@ -278,9 +278,9 @@ function fetchBackgruppen($vorstand=false) {
   $connection = new Dbh();
 
   if ($vorstand==true) {
-    $query = "SELECT backgruppeName FROM backgruppen WHERE aktiv = '1' and type = 'vorstand'";
+    $query = "SELECT id, backgruppeName FROM backgruppen WHERE aktiv = '1' and type = 'vorstand'";
   } else {
-    $query = "SELECT backgruppeName FROM backgruppen WHERE aktiv = '1'";
+    $query = "SELECT id, backgruppeName FROM backgruppen WHERE aktiv = '1'";
   }
   $stmt = $connection->connect()->prepare($query);
   $stmt->execute();
@@ -291,7 +291,7 @@ function fetchBackgruppen($vorstand=false) {
     // eintraege sortieren
     natsort($result);
     foreach ( $result as $row ) {
-      $backgruppenList .= "<option>" . $row["backgruppeName"] . "</option>";
+      $backgruppenList .= "<option value='" . $row["backgruppeName"] . "' data-group-id='" . $row["id"] . "'>" . $row["backgruppeName"] . "</option>";
     }
   } 
 
@@ -399,6 +399,9 @@ function shorter( $str ) {
         </div>
         <form action="insertDate.php" method="POST">
           <div class="modal-body">
+            <div class="alert alert-info sundayGroupHint" style="display: none;">
+              Hinweis: Sonntags koennen nur die Backgruppen mit ID 41, 39 und 25 gebucht werden.
+            </div>
             <div class="form-group">
               <label for="backgruppe">Backgruppe</label>
               <select class="form-control InputBackgruppe" name="InputBackgruppe" placeholder="Backgruppe wählen">
@@ -448,6 +451,9 @@ function shorter( $str ) {
               Dieser Termin kann momentan nur vom Vorstand gebucht werden. 
               Alle &uuml;brigen Backgruppe k&ouml;nnen den Termin ab dem <b class="date">??.??.????</b> buchen.
             </div>
+            <div class="alert alert-info sundayGroupHint" style="display: none;">
+              Hinweis: Sonntags koennen nur die Backgruppen mit ID 41, 39 und 25 gebucht werden.
+            </div>
             <div class="form-group">
               <label for="backgruppe">Backgruppe</label>
               <select class="form-control InputBackgruppe" name="InputBackgruppe" placeholder="Backgruppe wählen">
@@ -493,6 +499,9 @@ function shorter( $str ) {
         </div>
         <form action="insertDate.php" method="POST">
           <div class="modal-body">
+            <div class="alert alert-info sundayGroupHint" style="display: none;">
+              Hinweis: Sonntags darf nicht gebacken werden werden.
+            </div>
             <div class="form-group">
               <label for="backgruppe">Backgruppe</label>
               <select class="form-control InputBackgruppe" name="InputBackgruppe" placeholder="Backgruppe wählen">
@@ -609,6 +618,8 @@ function shorter( $str ) {
               echo "<div class='alert alert-success' role='alert'>Backtermin erfolgreich storniert.</div>";
             } else if ( $_GET["msg"] == "failBackgruppe" ) {
               echo "<div class='alert alert-danger' role='alert'>Fehler: Bitte Backgruppe wählen.</div>";
+            } else if ( $_GET["msg"] == "failSundayGroup" ) {
+              echo "<div class='alert alert-danger' role='alert'>Fehler: Sonntags sind nur die Backgruppen mit ID 41, 39 und 25 auswählbar.</div>";
             }
           }
         ?>
@@ -621,6 +632,40 @@ function shorter( $str ) {
   <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>-->
   <script src="./bootstrap/js/bootstrap.min.js"></script>
   <script>
+    function isSunday(dateString) {
+      var date = new Date(dateString + 'T00:00:00');
+      return date.getDay() === 0;
+    }
+
+    function filterBackgruppenForDate(modal, dateString) {
+      var onlySundayIds = ['41', '39', '25'];
+      var limitToSundayGroups = isSunday(dateString);
+
+      modal.find('.sundayGroupHint').toggle(limitToSundayGroups);
+
+      modal.find('select.InputBackgruppe').each(function () {
+        var select = $(this);
+        select.find('option').each(function () {
+          var option = $(this);
+          var groupId = option.data('group-id');
+
+          if (typeof groupId === 'undefined') {
+            option.prop('hidden', false);
+            option.prop('disabled', false);
+            return;
+          }
+
+          var isAllowed = !limitToSundayGroups || onlySundayIds.indexOf(String(groupId)) !== -1;
+          option.prop('hidden', !isAllowed);
+          option.prop('disabled', !isAllowed);
+        });
+
+        if (select.find('option:selected').prop('disabled')) {
+          select.val('0');
+        }
+      });
+    }
+
     // Dialog fuer Terminbuchung, Parameteruebergabe
     $('#bookingModal').on('show.bs.modal', function (event) {
       // Button der Dialog startet
@@ -633,6 +678,7 @@ function shorter( $str ) {
       var modal = $(this)
       modal.find('.modal-title').text('Backtermin am ' + convertedDate + ' buchen:')
       modal.find('.modal-body .form-group .requestedDate').val(recipient)
+      filterBackgruppenForDate(modal, recipient)
     })
   </script>
 
@@ -652,6 +698,7 @@ function shorter( $str ) {
       modal.find('.modal-title').text('Backtermin am ' + convertedDate + ' buchen:')
       modal.find('.modal-body .form-group .requestedDate').val(recipient)
       modal.find('.modal-body .text-danger .date').text( t_convertedDate )
+      filterBackgruppenForDate(modal, recipient)
     })
   </script>
 
@@ -670,6 +717,7 @@ function shorter( $str ) {
       modal.find('.modal-body .form-group .requestedDate').val(recipient)
       var slot = button.data('slot')
       modal.find('.modal-body .form-group .InputTimeSlot').val(slot)
+      filterBackgruppenForDate(modal, recipient)
     })
   </script>
 

@@ -11,15 +11,12 @@ if ( isset($_POST["submitBookingData"]) ) {
   $password = $_POST["InputPassword"];
   $requestedDate = $_POST["requestedDate"];
   $requestedSlot = $_POST["timeslot"];
+  $bookings = array();
 
   // lese aus dem angefragten datum wieder tag, monat und jahr
   $day = date("d", strtotime($requestedDate));
   $year = date("Y", strtotime($requestedDate));
   $month = date("m", strtotime($requestedDate));
-
-  var_dump($year);
-  var_dump($month);
-  var_dump($backgruppe);
 
   // pruefe ob backgruppe gewaehlt
   if ( $backgruppe == "0" ) {
@@ -29,12 +26,20 @@ if ( isset($_POST["submitBookingData"]) ) {
   } else {
 
     // lese Passwort der Backgruppe aus Datenbank
-    $sql = "SELECT passwort FROM backgruppen WHERE backgruppeName = ?";
+    $sql = "SELECT id, passwort, type FROM backgruppen WHERE backgruppeName = ?";
     $stmt = $connection->connect()->prepare($sql);
     $stmt->execute( [$backgruppe] );
 
     if ( $result = $stmt->fetchAll() ) {
+      $backgruppeId = $result[0]["id"];
       $passwordFromDb = $result[0]["passwort"]; 
+      $backkgruppenType = $result[0]["type"]; 
+
+      // Sonntags duerfen nur die Gruppen mit ID 41, 39 und 25 buchen.
+      if ( date('w', strtotime($requestedDate)) == 0 && !in_array(intval($backgruppeId), array(41, 39, 25), true) ) {
+        header("Location: index.php?month=" . $month . "&year=" . $year . "&msg=failSundayGroup");
+        exit();
+      }
 
       // pruefe ob passwort richtig eingegeben wurde
       if ( $password==$passwordFromDb ) {
@@ -42,13 +47,6 @@ if ( isset($_POST["submitBookingData"]) ) {
         // schreibe PW und Gruppe in session-cookie
         $_SESSION["password"] = $password;
         $_SESSION["backgruppe"] = $backgruppe;
-
-        // lese backgruppen type
-        $sql = "SELECT type FROM backgruppen WHERE backgruppeName = ?";
-        $stmt = $connection->connect()->prepare($sql);
-        $stmt->execute( [$backgruppe] );
-        $result = $stmt->fetchAll();
-        $backkgruppenType = $result[0]["type"]; 
 
         // wenn buchung vor dem stichtag oder backgruppentyp nicht "vorstand" dann Fehler
         // stichtag ist 13 Monate in der Vergangenheit
