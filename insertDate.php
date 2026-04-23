@@ -6,6 +6,11 @@ require_once("dbh.class.php");
 
 $connection = new Dbh();
 
+function redirectToCalendar($month, $year, $msg) {
+  header("Location: index.php?month=" . $month . "&year=" . $year . "&msg=" . $msg);
+  exit();
+}
+
 // Funktion zum Schreiben in die Log-Datei
 function writeDoerrenLog($name, $email, $backtermin) {
   $logFile = "doerren_log.txt";
@@ -23,20 +28,34 @@ function writeDoerrenLog($name, $email, $backtermin) {
 }
 
 if ( isset($_POST["submitBookingData"]) ) {
-  $backgruppe = $_POST["InputBackgruppe"];
-  $password = $_POST["InputPassword"];
-  $requestedDate = $_POST["requestedDate"];
-  $requestedSlot = $_POST["timeslot"];
-  $bookings = array();
+  $backgruppe = isset($_POST["InputBackgruppe"]) ? trim($_POST["InputBackgruppe"]) : "0";
+  $password = isset($_POST["InputPassword"]) ? $_POST["InputPassword"] : "";
+  $requestedDate = isset($_POST["requestedDate"]) ? $_POST["requestedDate"] : "";
+  $requestedSlot = isset($_POST["timeslot"]) ? $_POST["timeslot"] : "";
 
   // lese aus dem angefragten datum wieder tag, monat und jahr
-  $day = date("d", strtotime($requestedDate));
-  $year = date("Y", strtotime($requestedDate));
-  $month = date("m", strtotime($requestedDate));
+  $requestedTimestamp = strtotime($requestedDate);
+  if ( $requestedTimestamp === false ) {
+    $day = date("d");
+    $year = date("Y");
+    $month = date("m");
+  } else {
+    $day = date("d", $requestedTimestamp);
+    $year = date("Y", $requestedTimestamp);
+    $month = date("m", $requestedTimestamp);
+  }
+
+  if ( $requestedDate === "" || $requestedSlot === "" ) {
+    redirectToCalendar($month, $year, "failInsert");
+  }
+
+  // var_dump($year);
+  // var_dump($month);
+  // var_dump($backgruppe);
   // pruefe ob backgruppe gewaehlt
   if ( $backgruppe == "0" ) {
     // keine Backgruppe gewaehlt
-    echo "<script> alert('Fehler: Bitte Backgruppe w&auml;hlen'); window.location.href = 'index.php?month=" . $month . "&year=" . $year . "&msg=failBackgruppe'; </script>";
+    redirectToCalendar($month, $year, "failBackgruppe");
   } else {
 
     // lese Passwort der Backgruppe aus Datenbank
@@ -51,12 +70,14 @@ if ( isset($_POST["submitBookingData"]) ) {
 
       // Sonntags duerfen nur die Gruppen mit ID 41, 39 und 25 buchen.
       if ( date('w', strtotime($requestedDate)) == 0 && !in_array(intval($backgruppeId), array(41, 39, 25), true) ) {
-        echo "<script> alert('Fehler: Sonntags sind nur bestimmte Backgruppen erlaubt.'); window.location.href = 'index.php?month=" . $month . "&year=" . $year . "&msg=failSundayGroup'; </script>";
-        exit();
+        redirectToCalendar($month, $year, "failSundayGroup");
       }
 
+      $isHashedPw = preg_match('/^\$2[aby]\$|^\$argon2/i', $passwordFromDb) === 1;
+      $passwordOk = $isHashedPw ? password_verify($password, $passwordFromDb) : ($password == $passwordFromDb);
+
       // pruefe ob passwort richtig eingegeben wurde
-      if ( $password==$passwordFromDb ) {
+      if ( $passwordOk ) {
 
         // schreibe PW und Gruppe in session-cookie
         $_SESSION["password"] = $password;
@@ -71,22 +92,15 @@ if ( isset($_POST["submitBookingData"]) ) {
 
         $today = date("Y-m-d");
         if ( $today<$dateToCompare and $backkgruppenType!="vorstand" ) {
-          echo "<script> alert('Fehler: Dieser Termin kann erst ab " . $dateToCompare . " gebucht werden.'); window.location.href = 'index_local.php?month=" . $month . "&year=" . $year . "&msg=failToEarly'; </script>";
-          exit();
+          redirectToCalendar($month, $year, "failToEarly");
         }
 
         // pruefe ob termin bereits gebucht wurde
-        $sql = "SELECT backtermin FROM backtermine WHERE storniert!='ja' AND slot = ?";
+        $sql = "SELECT 1 FROM backtermine WHERE backtermin = ? AND storniert!='ja' AND slot = ? LIMIT 1";
         $stmt = $connection->connect()->prepare($sql);
-        $stmt->execute( [$requestedSlot] );
+        $stmt->execute( [$requestedDate, $requestedSlot] );
 
-        if ($result = $stmt->fetchAll()) {
-          foreach ( $result as $row ) {
-            $bookings[] = $row["backtermin"];
-          }
-        }
-
-        if ( !in_array($requestedDate, $bookings) ) {
+        if ( !$stmt->fetchColumn() ) {
           // Termin ist noch frei und wird gebucht
 
           // Wenn Backgruppe "Dörren" ist, schreibe in Log-Datei
@@ -98,21 +112,29 @@ if ( isset($_POST["submitBookingData"]) ) {
           $newStmt = $connection->connect()->prepare($newQuery);
           $newStmt->execute( array("backgruppe" => $backgruppe, "requestedDate" => $requestedDate, "slot" => $requestedSlot) );
           if ($newStmt) {
-            echo "<script> alert('Backtermin gespeichert'); window.location.href = 'index.php?month=" . $month . "&year=" . $year . "&msg=successInsert'; </script>";
+            redirectToCalendar($month, $year, "successInsert");
           }
+
+          redirectToCalendar($month, $year, "failInsert");
 
         } else {
           // Termin ist bereits gebucht
-          echo "<script> alert('Fehler: Termin ist bereits gebucht'); window.location.href = 'index.php?month=" . $month . "&year=" . $year . "&msg=failInsert'; </script>";
+          redirectToCalendar($month, $year, "failInsert");
         }
 
       } else {
         // Passwort wurde falsch eingegeben
-        echo "<script> alert('Fehler: falsches Passwort'); window.location.href = 'index.php?month=" . $month . "&year=" . $year . "&msg=failPW'; </script>";
+        redirectToCalendar($month, $year, "failPW");
       }
+
+    } else {
+      redirectToCalendar($month, $year, "failBackgruppe");
     }
   }
 
+} else {
+  header("Location: index.php");
+  exit();
 }
 
 ?>
