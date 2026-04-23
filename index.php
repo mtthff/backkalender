@@ -609,6 +609,8 @@ function shorter( $str ) {
               echo "<div class='alert alert-success' role='alert'>Backtermin erfolgreich storniert.</div>";
             } else if ( $_GET["msg"] == "failBackgruppe" ) {
               echo "<div class='alert alert-danger' role='alert'>Fehler: Bitte Backgruppe wählen.</div>";
+            } else if ( $_GET["msg"] == "failDelete" ) {
+              echo "<div class='alert alert-danger' role='alert'>Fehler: Termin konnte nicht storniert werden.</div>";
             }
           }
         ?>
@@ -734,7 +736,7 @@ function shorter( $str ) {
       modal.find('.modal-title').text('Backtermin am ' + convertedDate + ' stornieren:')
       modal.find('.modal-body .form-group .requestedDate').val(recipient)
       var gruppe = button.data('gruppe')
-      modal.find('.modal-body .form-group .Inputbackgruppe').val(gruppe)
+      modal.find('.modal-body .form-group .InputBackgruppe').val(gruppe)
       var slot = button.data('slot')
       modal.find('.modal-body .form-group .InputTimeSlot').val(slot)
     })
@@ -772,9 +774,9 @@ function shorter( $str ) {
       $script .= "$('#bookingModalFixedSlot').find('.modal-body .form-group .InputPassword').val('" . $_SESSION["password"] . "');";
       $script .= "$('#deleteModal').find('.modal-body .form-group .InputPassword').val('" . $_SESSION["password"] . "');";
       // Backgruppe setzen
-      $script .= "$('#bookingModal').find('.modal-body .form-group .Inputbackgruppe').val('" . $_SESSION["backgruppe"] . "');";
-      $script .= "$('#bookingModalFixedSlot').find('.modal-body .form-group .Inputbackgruppe').val('" . $_SESSION["backgruppe"] . "');";
-      $script .= "$('#deleteModal').find('.modal-body .form-group .Inputbackgruppe').val('" . $_SESSION["backgruppe"] . "');";
+      $script .= "$('#bookingModal').find('.modal-body .form-group .InputBackgruppe').val('" . $_SESSION["backgruppe"] . "');";
+      $script .= "$('#bookingModalFixedSlot').find('.modal-body .form-group .InputBackgruppe').val('" . $_SESSION["backgruppe"] . "');";
+      $script .= "$('#deleteModal').find('.modal-body .form-group .InputBackgruppe').val('" . $_SESSION["backgruppe"] . "');";
     }
     $script .= "});";
     $script .= "</script>";
